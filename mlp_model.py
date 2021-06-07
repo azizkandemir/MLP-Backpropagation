@@ -50,7 +50,7 @@ class MLPClassification(MLP):
         with open(self.train_dataset_path, 'r') as csv_file:
             train_dataset_list = [row for row in csv.reader(csv_file)][1:]
         self.input_size = len(train_dataset_list[0]) - 1    # Subtract precision field, -1.
-        output_classes = set([row[-1] for row in train_dataset_list])
+        output_classes = sorted(set([row[-1] for row in train_dataset_list]))
         for index, output_class in enumerate(output_classes):
             self.encoded_classes_key_real[Utils.cast_int(output_class)] = index
             self.encoded_classes_key_index[index] = Utils.cast_int(output_class)
@@ -65,7 +65,7 @@ class MLPClassification(MLP):
     def _read_test_dataset(self, test_dataset_path):
         with open(test_dataset_path, 'r') as csv_file:
             test_dataset_list = [row for row in csv.reader(csv_file)][1:]
-        output_classes = set([row[-1] for row in test_dataset_list])
+        output_classes = sorted(set([row[-1] for row in test_dataset_list]))
         encoded_classes_key_real = defaultdict()
         encoded_classes_key_index = defaultdict()
         for index, output_class in enumerate(output_classes):
