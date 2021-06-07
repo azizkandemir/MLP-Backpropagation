@@ -1,5 +1,6 @@
 import random
 
+from functions import SoftmaxFunction
 from layer import HiddenLayer, OutputLayer
 from neuron import Neuron
 
@@ -54,6 +55,8 @@ class Network:
                 neuron.calculate_output(inputs, self.bias_presence)
                 new_inputs.append(neuron.get_output())
             inputs = new_inputs
+        if isinstance(self.output_layer_activation_function, SoftmaxFunction):
+            inputs = list(SoftmaxFunction.activate_all(inputs))
         return inputs
 
     def backward_propagate(self, expected):

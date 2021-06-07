@@ -1,13 +1,19 @@
 from tkinter import ttk, filedialog, Tk, N, W, E, S, RIDGE, Label, DISABLED, ACTIVE, END
 from tkinter import messagebox as msg
 
+import numpy as np
+
 from functions import ActivationFunction
 from mlp_model import MLPClassification, MLPRegression
 from utils import Utils
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib import pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
 
 
 class MLPGuiTest:
-    def __init__(self, trained_mlp):
+    def __init__(self, trained_mlp, problem_type):
         self.window = Tk()
         self.mlp = trained_mlp
         self.test_file = None
@@ -15,6 +21,9 @@ class MLPGuiTest:
         self.input_frame_entry_box = None  # Input File Path
         self.run_button = None
         self.browse_input_button = None
+        self.test_fig = None
+        self.fig_result_text = None
+        self.problem_type = problem_type
         self.create_widgets()
 
     def create_widgets(self):
@@ -42,6 +51,15 @@ class MLPGuiTest:
         main_frame = ttk.LabelFrame(window, text='Test MLP', padding="30 10 30 10", style="TLabelframe")
         main_frame.grid(column=1, row=1, sticky=N, padx=20, pady=20, ipady=14)
 
+        # Error graph
+        plt.interactive(False)
+        self.test_fig = plt.figure(figsize=(5, 4))
+        ax1 = self.test_fig.add_subplot()
+        axes = plt.gca()
+        canvas = FigureCanvasTkAgg(self.test_fig, master=main_frame)
+        plot_widget = canvas.get_tk_widget()
+        plot_widget.grid(column=2, row=0, sticky=N, rowspan=3)
+
         # Intro Label
         intro_label = Label(main_frame, text="Provide test dataset file in the form of an external csv file.\n\n "
                                              "Provided dataset will be used to test MLP model.", font=("Arial", 12))
@@ -55,7 +73,7 @@ class MLPGuiTest:
         input_frame_label = Label(input_frame, text="Dataset File Path: ", font=("Arial Bold", 14))
         input_frame_entry_box = ttk.Entry(input_frame, width=40)
 
-        input_frame_label.grid(column=1, row=3, sticky=W)
+        input_frame_label.grid(column=1, row=2, sticky=W)
         input_frame_entry_box.grid(column=2, row=3, sticky=W)
         self.input_frame_entry_box = input_frame_entry_box
 
@@ -64,7 +82,7 @@ class MLPGuiTest:
         self.browse_input_button = browse_input_button
 
         run_button = ttk.Button(master=main_frame, text="TEST", command=self.run)
-        run_button.grid(column=1, row=9, sticky=N, pady=10, ipadx=5)
+        run_button.grid(column=1, row=2, sticky=N, pady=10, ipadx=5)
         run_button['state'] = DISABLED
         self.run_button = run_button
 
@@ -82,15 +100,40 @@ class MLPGuiTest:
             self.run_button['state'] = ACTIVE
 
     def run(self):
+        def __plot_decision_boundary(pred_func):
+            x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
+            y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
+            h = 0.01
+            xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+            Z = pred_func(np.c_[xx.ravel(), yy.ravel()])
+            Z = np.array(Z)
+            Z = Z.reshape(xx.shape)
+            plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral)
+            plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
+
         mlp_model = self.mlp
-        mlp_model.test(self.test_file.get_file_path())
+        test_result = mlp_model.test(self.test_file.get_file_path())
+        X = mlp_model.X
+        y = mlp_model.y
+        __plot_decision_boundary(lambda x: mlp_model.predict_last(x))
+        for i in self.test_fig.axes[0].get_lines():
+            i.remove()
+        for text in self.test_fig.texts:
+            text.set_visible(False)
+        if self.problem_type.lower() == 'classification':
+            text = f"Accuracy = {'{:.4f}'.format(test_result)}%"
+            self.fig_result_text = plt.figtext(.05, .0, text, fontsize=10, va="bottom", ha="left")
+        else:
+            self.test_fig.axes[0].set_ylim(bottom=0, auto=True)
+            text = f"Min MSE = {'{:.6f}'.format(test_result)}"
+            self.fig_result_text = plt.figtext(.05, .0, text, fontsize=10, va="bottom", ha="left")
+        self.test_fig.canvas.draw()
 
     def terminate(self):
         self.window.destroy()
 
     def on_closing(self):
-        if msg.askokcancel("Quit", "Do you want to quit?"):
-            self.terminate()
+        self.terminate()
 
 
 class MLPGuiTrain:
@@ -101,7 +144,6 @@ class MLPGuiTrain:
         self.hidden_layer_num_entry_box = None  # Number of Vectors
         self.hidden_layer_size_entry_box = None  # Size of Vectors
         self.hidden_layer_activation_function_combobox = None  # Hidden Layer Activation Function
-        self.output_layer_activation_function_combobox = None  # Output Layer Activation Function
         self.bias_presence_combobox = None  # Bias Presence
         self.batch_size_entry_box = None  # Batch Size
         self.number_of_epochs_entry_box = None  # Num of Epochs
@@ -109,9 +151,11 @@ class MLPGuiTrain:
         self.momentum_entry_box = None  # Momentum
         self.problem_type_combobox = None  # Problem Type: Classification / Regression
         self.run_button = None
+        self.train_fig = None
         self.browse_input_button = None
         self.generate_input_button = None
         self.trained_model = None
+        self.fig_result_text = None
         self.create_widgets()
 
     def create_widgets(self):
@@ -148,6 +192,21 @@ class MLPGuiTrain:
         input_frame = ttk.LabelFrame(main_frame, text='Load Train Dataset', padding="30 10 30 10", style="TLabelframe")
         input_frame.grid(column=1, row=1, sticky=W, padx=20, pady=20, ipady=14)
 
+        # Error graph
+        self.train_fig = plt.figure(figsize=(7, 6))
+        plt.ion()
+        ax1 = self.train_fig.add_subplot()
+        ax1.set_ylabel('Accuracy [%]')
+        ax1.set_xlabel('Epoch')
+        ax1.set_title('Trained Model Result')
+        self.fig_result_text = plt.figtext(.05, .0, "Final Accuracy =  \n Max Accuracy = ", fontsize=10, va="bottom", ha="left")
+
+        axes = plt.gca()
+        axes.set_ylim([0, 100])
+        canvas = FigureCanvasTkAgg(self.train_fig, master=main_frame)
+        plot_widget = canvas.get_tk_widget()
+        plot_widget.grid(column=2, row=0, sticky=N, rowspan=3)
+
         # Input Frame Label
         input_frame_label = Label(input_frame, text="Dataset File Path: ", font=("Arial Bold", 14))
         input_frame_entry_box = ttk.Entry(input_frame, width=40)
@@ -159,7 +218,7 @@ class MLPGuiTrain:
         browse_input_button = ttk.Button(master=input_frame, text="BROWSE", command=self.browse_input)
         browse_input_button.grid(column=2, row=4, sticky=E, pady=10, ipadx=2)
         self.browse_input_button = browse_input_button
-    
+
         # Input Frame GUI
         input_frame_gui = ttk.LabelFrame(main_frame, text='Input Parameters', padding="30 10 30 10", style="TLabelframe")
         input_frame_gui.grid(column=1, row=2, sticky=N, padx=20, pady=20)
@@ -178,23 +237,14 @@ class MLPGuiTrain:
         hidden_layer_size_entry_box.grid(column=4, row=4, sticky=E)
         self.hidden_layer_size_entry_box = hidden_layer_size_entry_box
 
-        hidden_layer_activation_function_label = Label(input_frame_gui, text="Hidden Layer Activation Function: ", font=("Arial Bold", 14))
+        hidden_layer_activation_function_label = Label(input_frame_gui, text="Activation Function: ", font=("Arial Bold", 14))
         hidden_layer_activation_function_combobox = ttk.Combobox(master=input_frame_gui, width=12, state="readonly")
-        hidden_layer_activation_function_combobox['values'] = ("Sigmoid", "tanh", "ReLU", "Linear")
+        hidden_layer_activation_function_combobox['values'] = ("Sigmoid", "tanh", "ReLU")
         hidden_layer_activation_function_combobox.current(0)
 
         hidden_layer_activation_function_label.grid(column=3, row=5, sticky=E)
         hidden_layer_activation_function_combobox.grid(column=4, row=5, sticky=E)
         self.hidden_layer_activation_function_combobox = hidden_layer_activation_function_combobox
-
-        output_layer_activation_function_label = Label(input_frame_gui, text="Output Layer Activation Function: ", font=("Arial Bold", 14))
-        output_layer_activation_function_combobox = ttk.Combobox(master=input_frame_gui, width=12, state="readonly")
-        output_layer_activation_function_combobox['values'] = ("Sigmoid", "tanh", "ReLU", "Linear")
-        output_layer_activation_function_combobox.current(0)
-
-        output_layer_activation_function_label.grid(column=3, row=6, sticky=E)
-        output_layer_activation_function_combobox.grid(column=4, row=6, sticky=E)
-        self.output_layer_activation_function_combobox = output_layer_activation_function_combobox
 
         bias_presence_label = Label(input_frame_gui, text="Bias Presence: ", font=("Arial Bold", 14))
         bias_presence_combobox = ttk.Combobox(master=input_frame_gui, width=12, state="readonly")
@@ -275,21 +325,43 @@ class MLPGuiTrain:
             msg.showerror(title="ERROR", message="MOMENTUM SIZE MUST BE A NUMERIC VALUE!")
         else:
             hidden_layer_activation_function = ActivationFunction.determine_function(self.hidden_layer_activation_function_combobox.get())
-            output_layer_activation_function = ActivationFunction.determine_function(self.output_layer_activation_function_combobox.get())
             bias_presence = self.bias_presence_combobox.get()
             problem_type = self.problem_type_combobox.get()
             train_file_path = self.train_file.get_file_path()
             if problem_type.lower() == 'classification':
                 solution_model = MLPClassification
             else:
+                self.train_fig.axes[0].set_ylabel('MSE')
                 solution_model = MLPRegression
 
             mlp_model = solution_model(hidden_layer_count, hidden_layer_size, hidden_layer_activation_function,
-                                       output_layer_activation_function, train_file_path,
-                                       epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
-                                       bias_presence=bias_presence, momentum=momentum)
-            mlp_model.train()
+                                       train_file_path, epochs=epochs, batch_size=batch_size,
+                                       learning_rate=learning_rate, bias_presence=bias_presence, momentum=momentum)
+            validation_score = mlp_model.train()
+
+            # Update error graph
+            epochs = [m[0] for m in validation_score]
+            metric = [m[1] for m in validation_score]
+            for i in self.train_fig.axes[0].get_lines():
+                i.remove()
+            for text in self.train_fig.texts:
+                text.set_visible(False)
+            if problem_type.lower() == 'classification':
+                self.train_fig.axes[0].set_ylim([0, 100])
+                text = f"Final Accuracy = {'{:.4f}'.format(metric[-1])}% \n " \
+                       f"Max Accuracy = {'{:.4f}'.format(max(metric))}%"
+                self.fig_result_text = plt.figtext(.05, .0, text, fontsize=10, va="bottom", ha="left")
+            else:
+                self.train_fig.axes[0].set_ylim(bottom=0, auto=True)
+                text = f"Final MSE = {'{:.6f}'.format(metric[-1])} \n " \
+                       f"Min MSE = {'{:.6f}'.format(min(metric))}"
+                self.fig_result_text = plt.figtext(.05, .0, text, fontsize=10, va="bottom", ha="left")
+            plt.plot(epochs, metric)
+            self.train_fig.canvas.draw()
+
             self.trained_model = mlp_model
+            if mlp_model:
+                MLPGuiTest(mlp_model, problem_type)
             # self.terminate()
 
     def terminate(self):
@@ -310,5 +382,6 @@ class InputFile:
 
 if __name__ == "__main__":
     train_mlp = MLPGuiTrain()
-    if train_mlp.trained_model:
-        test_mlp = MLPGuiTest(train_mlp.trained_model)
+    # if train_mlp.trained_model:
+    #     test_mlp = MLPGuiTest(train_mlp.trained_model)
+    # test_mlp = MLPGuiTest(None)

@@ -2,6 +2,9 @@ import csv
 import math
 from collections import defaultdict
 
+import numpy as np
+
+from functions import LinearFunction, SigmoidFunction, SoftmaxFunction
 from network import Network
 from preprocess import PreProcess
 from utils import Utils
@@ -22,22 +25,23 @@ class MLP:
         self.train_dataset = None
         self.train_dataset_size = None
         self.validation_dataset = None
+        self.training_score = None
+        self.validation_score = None
         self.test_dataset = None
         self.bias_presence = True if bias_presence and bias_presence.lower() == 'yes' else False
         self.input_size = None
         self.network = None
         self.epsilon = epsilon
-        self.early_stop_max_count = 1000
+        self.early_stop_max_count = 100
         self.momentum = momentum
 
 
 class MLPClassification(MLP):
-    def __init__(self, hidden_layer_count, hidden_layer_size, hidden_layer_activation_function,
-                 output_layer_activation_function, train_dataset_path,
+    def __init__(self, hidden_layer_count, hidden_layer_size, hidden_layer_activation_function, train_dataset_path,
                  epochs=1, learning_rate=0.3, bias_presence=None, batch_size=None, momentum=0):
         super().__init__(hidden_layer_count=hidden_layer_count, hidden_layer_size=hidden_layer_size,
                          hidden_layer_activation_function=hidden_layer_activation_function,
-                         output_layer_activation_function=output_layer_activation_function,
+                         output_layer_activation_function=None,
                          train_dataset_path=train_dataset_path,
                          epochs=epochs, learning_rate=learning_rate, bias_presence=bias_presence,
                          batch_size=batch_size, momentum=momentum)
@@ -45,6 +49,8 @@ class MLPClassification(MLP):
         self.output_size = None
         self.encoded_classes_key_real = defaultdict()
         self.encoded_classes_key_index = defaultdict()
+        self.X = []
+        self.y = []
 
     def _read_train_dataset(self):
         with open(self.train_dataset_path, 'r') as csv_file:
@@ -60,6 +66,10 @@ class MLPClassification(MLP):
         self.train_dataset, self.validation_dataset = PreProcess.train_test_split(train_dataset_list)
         self.train_dataset_size = len(self.train_dataset)
         self.batch_size = self.batch_size if self.batch_size else self.train_dataset_size
+        if len(output_classes) == 2:
+            self.output_layer_activation_function = SigmoidFunction()
+        else:
+            self.output_layer_activation_function = SoftmaxFunction()
         return {'real_to_index': self.encoded_classes_key_real, 'index_to_real': self.encoded_classes_key_index}
 
     def _read_test_dataset(self, test_dataset_path):
@@ -72,6 +82,13 @@ class MLPClassification(MLP):
             encoded_classes_key_real[Utils.cast_int(output_class)] = index
             encoded_classes_key_index[index] = Utils.cast_int(output_class)
         test_dataset_list = [[*[Utils.cast_float(i) for i in row[:-1]], self.encoded_classes_key_real[Utils.cast_int(row[-1])]] for row in test_dataset_list]
+        self.X = []
+        self.y = []
+        for i in test_dataset_list:
+            self.y.append(i[-1])
+            self.X.append(i[:-1])
+        self.X = np.array(self.X)
+        self.y = np.array(self.y)
         self.test_dataset = test_dataset_list
         return {'real_to_index': encoded_classes_key_real, 'index_to_real': encoded_classes_key_index}
 
@@ -121,21 +138,24 @@ class MLPClassification(MLP):
                 print(f"Early stopped after {epoch_num} epochs.")
                 break
             prev_validation_metric = validation_metric
+        return validation_score
 
     def test(self, test_dataset_path):
         encoded_classes_dict = self._read_test_dataset(test_dataset_path)
         test_metric = self.evaluate(self.network, self.test_dataset, encoded_classes_dict)['accuracy']
         print(f"Test Result: {test_metric}")
+        return test_metric
 
-        for row in self.test_dataset:
-            expected = row[-1]
-            prediction = self.predict(self.network, row[:-1])
-            print(f'Expected: {expected}, Predicted: {prediction}')
+    def predict_last(self, array):
+        return_z = []
+        for row in array:
+            outputs = self.network.forward_propagate(row)
+            return_z.append(outputs.index(max(outputs)))
+        return return_z
 
     @staticmethod
     def predict(network, row):
         outputs = network.forward_propagate(row)
-
         return outputs.index(max(outputs))
 
     @staticmethod
@@ -163,12 +183,11 @@ class MLPClassification(MLP):
 
 
 class MLPRegression(MLP):
-    def __init__(self, hidden_layer_count, hidden_layer_size, hidden_layer_activation_function,
-                 output_layer_activation_function, train_dataset_path,
+    def __init__(self, hidden_layer_count, hidden_layer_size, hidden_layer_activation_function, train_dataset_path,
                  epochs=1, learning_rate=0.3, bias_presence=None, batch_size=None, momentum=0):
         super().__init__(hidden_layer_count=hidden_layer_count, hidden_layer_size=hidden_layer_size,
                          hidden_layer_activation_function=hidden_layer_activation_function,
-                         output_layer_activation_function=output_layer_activation_function,
+                         output_layer_activation_function=LinearFunction(),
                          train_dataset_path=train_dataset_path,
                          epochs=epochs, learning_rate=learning_rate, bias_presence=bias_presence,
                          batch_size=batch_size, momentum=momentum)
@@ -233,6 +252,7 @@ class MLPRegression(MLP):
                 print(f"Early stopped after {epoch_num} epochs.")
                 break
             prev_validation_metric = validation_metric
+        return validation_score
 
     def test(self, test_dataset_path):
         self._read_test_dataset(test_dataset_path)

@@ -1,6 +1,8 @@
 from abc import abstractmethod
 from math import exp
 
+import numpy as np
+
 
 class ActivationFunction:
     def __init__(self):
@@ -17,6 +19,8 @@ class ActivationFunction:
             return_function = ReLUFunction()
         elif func_str.lower() == 'linear':
             return_function = LinearFunction()
+        elif func_str.lower() == 'softmax':
+            return_function = SoftmaxFunction()
         return return_function
 
     @abstractmethod
@@ -80,3 +84,21 @@ class LinearFunction(ActivationFunction):
 
     def calculate_derivative(self, val):
         return 1
+
+
+class SoftmaxFunction(ActivationFunction):
+    def __init__(self):
+        super().__init__()
+
+    def activate(self, val):
+        return val
+
+    def calculate_derivative(self, value):
+        return 1
+
+    @staticmethod
+    def activate_all(vals):
+        """
+            https://medium.com/data-science-bootcamp/understand-the-softmax-function-in-minutes-f3a59641e86d
+        """
+        return np.exp(vals) / np.sum(np.exp(vals), axis=0)
