@@ -2,7 +2,7 @@ from tkinter import ttk, filedialog, Tk, N, W, E, S, RIDGE, Label, DISABLED, ACT
 from tkinter import messagebox as msg
 
 from functions import ActivationFunction
-from mlp_model import MLP
+from mlp_model import MLPClassification, MLPRegression
 from utils import Utils
 
 
@@ -103,7 +103,7 @@ class MLPGuiTrain:
         self.activation_function_combobox = None  # Activation Function
         self.bias_presence_combobox = None  # Bias Presence
         self.batch_size_entry_box = None  # Batch Size
-        self.number_of_iterations_entry_box = None  # Num of Iterations
+        self.number_of_epochs_entry_box = None  # Num of Epochs
         self.learning_rate_entry_box = None  # Learning Rate
         self.momentum_entry_box = None  # Momentum
         self.problem_type_combobox = None  # Problem Type: Classification / Regression
@@ -179,7 +179,7 @@ class MLPGuiTrain:
 
         activation_function_label = Label(input_frame_gui, text="Activation Function: ", font=("Arial Bold", 14))
         activation_function_combobox = ttk.Combobox(master=input_frame_gui, width=12, state="readonly")
-        activation_function_combobox['values'] = ("Sigmoid", "tanh", "Softmax")
+        activation_function_combobox['values'] = ("Sigmoid", "tanh", "ReLU", "Linear")
         activation_function_combobox.current(0)
 
         activation_function_label.grid(column=3, row=5, sticky=E)
@@ -202,12 +202,12 @@ class MLPGuiTrain:
         batch_size_entry_box.grid(column=4, row=7, sticky=E)
         self.batch_size_entry_box = batch_size_entry_box
 
-        number_of_iterations_label = Label(input_frame_gui, text="Number of Iterations: ", font=("Arial Bold", 14))
-        number_of_iterations_entry_box = ttk.Entry(input_frame_gui, width=14)
+        number_of_epochs_label = Label(input_frame_gui, text="Number of Epochs: ", font=("Arial Bold", 14))
+        number_of_epochs_entry_box = ttk.Entry(input_frame_gui, width=14)
 
-        number_of_iterations_label.grid(column=3, row=8, sticky=E)
-        number_of_iterations_entry_box.grid(column=4, row=8, sticky=E)
-        self.number_of_iterations_entry_box = number_of_iterations_entry_box
+        number_of_epochs_label.grid(column=3, row=8, sticky=E)
+        number_of_epochs_entry_box.grid(column=4, row=8, sticky=E)
+        self.number_of_epochs_entry_box = number_of_epochs_entry_box
 
         learning_rate_label = Label(input_frame_gui, text="Learning Rate: ", font=("Arial Bold", 14))
         learning_rate_entry_box = ttk.Entry(input_frame_gui, width=14)
@@ -257,23 +257,28 @@ class MLPGuiTrain:
             msg.showerror(title="ERROR", message="HIDDEN LAYER SIZE MUST BE AN INTEGER!")
         elif (batch_size := Utils.cast_int(self.batch_size_entry_box.get())) is None:
             msg.showerror(title="ERROR", message="BATCH SIZE MUST BE AN INTEGER!")
-        elif (epochs := Utils.cast_int(self.number_of_iterations_entry_box.get())) is None:
-            msg.showerror(title="ERROR", message="NUMBER OF ITERATIONS MUST BE AN INTEGER!")
+        elif (epochs := Utils.cast_int(self.number_of_epochs_entry_box.get())) is None:
+            msg.showerror(title="ERROR", message="NUMBER OF EPOCHS MUST BE AN INTEGER!")
         elif (learning_rate := Utils.cast_float(self.learning_rate_entry_box.get())) is None:
             msg.showerror(title="ERROR", message="LEARNING RATE MUST BE A NUMERIC VALUE!")
-        elif (momentum := Utils.cast_int(self.momentum_entry_box.get())) is None:
-            msg.showerror(title="ERROR", message="MOMENTUM SIZE MUST BE AN INTEGER!")
+        elif (momentum := Utils.cast_float(self.momentum_entry_box.get())) is None:
+            msg.showerror(title="ERROR", message="MOMENTUM SIZE MUST BE A NUMERIC VALUE!")
         else:
-            self.run_button['state'] = DISABLED
             activation_function = ActivationFunction.determine_function(self.activation_function_combobox.get())
             bias_presence = self.bias_presence_combobox.get()
             problem_type = self.problem_type_combobox.get()
             train_file_path = self.train_file.get_file_path()
-            mlp_model = MLP(hidden_layer_count, hidden_layer_size, activation_function, train_file_path,
-                            epochs=epochs, learning_rate=learning_rate, bias_presence=bias_presence)
+            if problem_type.lower() == 'classification':
+                solution_model = MLPClassification
+            else:
+                solution_model = MLPRegression
+
+            mlp_model = solution_model(hidden_layer_count, hidden_layer_size, activation_function, train_file_path,
+                                       epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
+                                       bias_presence=bias_presence, momentum=momentum)
             mlp_model.train()
             self.trained_model = mlp_model
-            self.terminate()
+            # self.terminate()
 
     def terminate(self):
         self.window.destroy()

@@ -1,8 +1,6 @@
 from abc import abstractmethod
 from math import exp
 
-import numpy as np
-
 
 class ActivationFunction:
     def __init__(self):
@@ -15,13 +13,18 @@ class ActivationFunction:
             return_function = SigmoidFunction()
         elif func_str.lower() == 'tanh':
             return_function = TanhFunction()
-        elif func_str.lower() == 'softmax':
-            return_function = SoftmaxFunction()
-
+        elif func_str.lower() == 'relu':
+            return_function = ReLUFunction()
+        elif func_str.lower() == 'linear':
+            return_function = LinearFunction()
         return return_function
 
     @abstractmethod
     def activate(self, value):
+        pass
+
+    @abstractmethod
+    def calculate_derivative(self, value):
         pass
 
 
@@ -37,6 +40,9 @@ class SigmoidFunction(ActivationFunction):
         """
         return 1.0 / (1.0 + exp(-val))
 
+    def calculate_derivative(self, val):
+        return val * (1.0 - val)
+
 
 class TanhFunction(ActivationFunction):
     def __init__(self):
@@ -50,14 +56,27 @@ class TanhFunction(ActivationFunction):
                 """
         return (exp(val) - exp(-val)) / (exp(val) + exp(-val))
 
+    def calculate_derivative(self, val):
+        return 1.0 - val ** 2
 
-class SoftmaxFunction(ActivationFunction):
+
+class ReLUFunction(ActivationFunction):
     def __init__(self):
         super().__init__()
 
     def activate(self, val):
-        """
-            https://medium.com/data-science-bootcamp/understand-the-softmax-function-in-minutes-f3a59641e86d
-            Compute softmax values for each sets of scores in x.
-        """
-        return np.exp(val) / np.sum(np.exp(val), axis=0)
+        return max(0, val)
+
+    def calculate_derivative(self, val):
+        return 0 if val <= 0 else 1
+
+
+class LinearFunction(ActivationFunction):
+    def __init__(self):
+        super().__init__()
+
+    def activate(self, val):
+        return val
+
+    def calculate_derivative(self, val):
+        return 1
