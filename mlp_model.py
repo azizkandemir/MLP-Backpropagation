@@ -8,14 +8,16 @@ from utils import Utils
 
 
 class MLP:
-    def __init__(self, hidden_layer_count, hidden_layer_size, activation_function, train_dataset_path, epochs=1,
-                 learning_rate=0.3, bias_presence=None, batch_size=None, epsilon=0.1, momentum=0):
+    def __init__(self, hidden_layer_count, hidden_layer_size, hidden_layer_activation_function,
+                 output_layer_activation_function, train_dataset_path,
+                 epochs=1, learning_rate=0.3, bias_presence=None, batch_size=None, epsilon=0.1, momentum=0):
         self.hidden_layer_size = hidden_layer_size
         self.hidden_layer_count = hidden_layer_count
         self.epochs = epochs
         self.learning_rate = learning_rate
         self.train_dataset_path = train_dataset_path
-        self.activation_function = activation_function
+        self.hidden_layer_activation_function = hidden_layer_activation_function
+        self.output_layer_activation_function = output_layer_activation_function
         self.batch_size = batch_size
         self.train_dataset = None
         self.train_dataset_size = None
@@ -30,10 +32,13 @@ class MLP:
 
 
 class MLPClassification(MLP):
-    def __init__(self, hidden_layer_count, hidden_layer_size, activation_function, train_dataset_path, epochs=1,
-                 learning_rate=0.3, bias_presence=None, batch_size=None, momentum=0):
+    def __init__(self, hidden_layer_count, hidden_layer_size, hidden_layer_activation_function,
+                 output_layer_activation_function, train_dataset_path,
+                 epochs=1, learning_rate=0.3, bias_presence=None, batch_size=None, momentum=0):
         super().__init__(hidden_layer_count=hidden_layer_count, hidden_layer_size=hidden_layer_size,
-                         activation_function=activation_function, train_dataset_path=train_dataset_path,
+                         hidden_layer_activation_function=hidden_layer_activation_function,
+                         output_layer_activation_function=output_layer_activation_function,
+                         train_dataset_path=train_dataset_path,
                          epochs=epochs, learning_rate=learning_rate, bias_presence=bias_presence,
                          batch_size=batch_size, momentum=momentum)
 
@@ -74,7 +79,8 @@ class MLPClassification(MLP):
         training_score, validation_score = [], []
         encoded_classes = self._read_train_dataset()
         self.network = Network(self.hidden_layer_count, self.hidden_layer_size, self.bias_presence, self.input_size,
-                               self.output_size, self.activation_function, self.momentum)
+                               self.output_size, self.hidden_layer_activation_function,
+                               self.output_layer_activation_function, self.momentum)
         num_of_iterations = math.floor(self.train_dataset_size / self.batch_size)
         prev_validation_metric = 0
         early_stopping_triggered_count = 0
@@ -157,10 +163,13 @@ class MLPClassification(MLP):
 
 
 class MLPRegression(MLP):
-    def __init__(self, hidden_layer_count, hidden_layer_size, activation_function, train_dataset_path, epochs=1,
-                 learning_rate=0.3, bias_presence=None, batch_size=None, momentum=0):
+    def __init__(self, hidden_layer_count, hidden_layer_size, hidden_layer_activation_function,
+                 output_layer_activation_function, train_dataset_path,
+                 epochs=1, learning_rate=0.3, bias_presence=None, batch_size=None, momentum=0):
         super().__init__(hidden_layer_count=hidden_layer_count, hidden_layer_size=hidden_layer_size,
-                         activation_function=activation_function, train_dataset_path=train_dataset_path,
+                         hidden_layer_activation_function=hidden_layer_activation_function,
+                         output_layer_activation_function=output_layer_activation_function,
+                         train_dataset_path=train_dataset_path,
                          epochs=epochs, learning_rate=learning_rate, bias_presence=bias_presence,
                          batch_size=batch_size, momentum=momentum)
 
@@ -187,7 +196,8 @@ class MLPRegression(MLP):
         training_score, validation_score = [], []
         self._read_train_dataset()
         self.network = Network(self.hidden_layer_count, self.hidden_layer_size, self.bias_presence, self.input_size,
-                               self.output_size, self.activation_function, self.momentum)
+                               self.output_size, self.hidden_layer_activation_function,
+                               self.output_layer_activation_function, self.momentum)
         num_of_iterations = math.floor(self.train_dataset_size / self.batch_size)
         prev_validation_metric = 0
         early_stopping_triggered_count = 0

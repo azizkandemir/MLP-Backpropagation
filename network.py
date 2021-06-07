@@ -5,14 +5,16 @@ from neuron import Neuron
 
 
 class Network:
-    def __init__(self, hidden_layer_count, hidden_layer_size, bias_presence, input_size, output_size, activation_function, momentum):
+    def __init__(self, hidden_layer_count, hidden_layer_size, bias_presence, input_size, output_size,
+                 hidden_layer_activation_function, output_layer_activation_function, momentum):
         self.hidden_layer_count = hidden_layer_count
         self.hidden_layer_size = hidden_layer_size
         self.bias_presence = bias_presence
         self.input_size = input_size
         self.output_size = output_size
         self.hidden_layers = []
-        self.activation_function = activation_function
+        self.hidden_layer_activation_function = hidden_layer_activation_function
+        self.output_layer_activation_function = output_layer_activation_function
         self.momentum = momentum
         self.output_layer = None
         self.layers = None
@@ -24,17 +26,18 @@ class Network:
         bias_presence = self.bias_presence
         input_size = self.input_size
         output_size = self.output_size
-        activation_func = self.activation_function
+        hidden_layer_activation_func = self.hidden_layer_activation_function
+        output_layer_activation_func = self.output_layer_activation_function
         random.seed(10)
         for layer_index in range(hidden_layer_count):
             previous_layer_size = input_size if layer_index == 0 else hidden_layer_size
-            neuron_list = [Neuron(previous_layer_size + (1 if bias_presence else 0), activation_func) for _ in range(hidden_layer_size)]
+            neuron_list = [Neuron(previous_layer_size + (1 if bias_presence else 0), hidden_layer_activation_func) for _ in range(hidden_layer_size)]
             hidden_layer = HiddenLayer(neuron_list)
             hidden_layer.previous_layer = None if layer_index == 0 else self.hidden_layers[layer_index - 1]
             if hidden_layer.previous_layer:
                 hidden_layer.previous_layer.next_layer = hidden_layer
             self.hidden_layers.append(hidden_layer)
-        neuron_list = [Neuron(hidden_layer_size + (1 if bias_presence else 0), activation_func) for _ in range(output_size)]
+        neuron_list = [Neuron(hidden_layer_size + (1 if bias_presence else 0), output_layer_activation_func) for _ in range(output_size)]
         output_layer = OutputLayer(neuron_list)
         self.hidden_layers[-1].next_layer = output_layer
         output_layer.previous_layer = self.hidden_layers[-1]
@@ -78,7 +81,7 @@ class Network:
 
             for neuron_index, neuron in enumerate(layer.get_neurons()):
                 neuron.previous_delta = neuron.delta
-                neuron.delta = errors[neuron_index] * self.activation_function.calculate_derivative(neuron.get_output())
+                neuron.delta = errors[neuron_index] * neuron.activation_function.calculate_derivative(neuron.get_output())
 
     def update_weights(self, inputs, learning_rate):
         for layer_index, layer in enumerate(self.get_layers()):
