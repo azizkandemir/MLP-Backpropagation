@@ -295,49 +295,6 @@ class InputFile:
     def get_file_path(self):
         return self.file_path
 
-    # def preprocess(self):
-    #
-    #     print("Before: {}".format(dataset[0]))
-    #
-    #     dataset_name = detect_dataset(dataset)
-    #
-    #     if dataset_name == "iris":
-    #         dataset = preprocess_iris(dataset)
-    #     elif dataset_name == "adult":
-    #         dataset = preprocess_adult(dataset)
-    #
-    #     # Normalize input variables
-    #     minmax = preprocessing.dataset_minmax(dataset)
-    #     preprocessing.normalize_dataset(dataset, minmax)
-    #     print("After normalization: {}".format(dataset[0]))
-    #
-    #     if not (file_path := self.file_path):
-    #         return False, "INPUT VECTOR FILE PATH IS NOT SELECTED!"
-    #     with open(file_path, 'r') as vector_f:
-    #         vector_lines = list(filter(None, (line.strip() for line in vector_f.readlines())))
-    #
-    #     vector_size_flag = None
-    #     for line in vector_lines:
-    #         tmp_elems = []
-    #         vector_list = list(filter(None, [i.strip() for i in line.split(',')]))
-    #         if not vector_size_flag:
-    #             vector_size_flag = len(vector_list)
-    #         elif len(vector_list) != vector_size_flag:
-    #             return False, "VECTORS' SIZE MUST BE EQUAL!"
-    #         for e in vector_list:
-    #             e = Utils.cast_int(e)
-    #             if e is None:
-    #                 return False, "VECTOR ELEMENTS MUST BE AN INTEGER!"
-    #             # Convert vector to bipolar.
-    #             if e < 0 or e == 0:
-    #                 e = -1
-    #             else:
-    #                 e = 1
-    #             tmp_elems.append(e)
-    #         vector = np.array(tmp_elems, float)
-    #         self.vector_list.append(vector.reshape((vector.size, 1)))
-    #     return True, 'INPUT VECTORS GENERATED FROM FILE AND SAVED!'
-
 
 if __name__ == "__main__":
     train_mlp = MLPGuiTrain()
