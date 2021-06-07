@@ -100,7 +100,8 @@ class MLPGuiTrain:
         self.input_frame_entry_box = None  # Input File Path
         self.hidden_layer_num_entry_box = None  # Number of Vectors
         self.hidden_layer_size_entry_box = None  # Size of Vectors
-        self.activation_function_combobox = None  # Activation Function
+        self.hidden_layer_activation_function_combobox = None  # Hidden Layer Activation Function
+        self.output_layer_activation_function_combobox = None  # Output Layer Activation Function
         self.bias_presence_combobox = None  # Bias Presence
         self.batch_size_entry_box = None  # Batch Size
         self.number_of_epochs_entry_box = None  # Num of Epochs
@@ -177,50 +178,59 @@ class MLPGuiTrain:
         hidden_layer_size_entry_box.grid(column=4, row=4, sticky=E)
         self.hidden_layer_size_entry_box = hidden_layer_size_entry_box
 
-        activation_function_label = Label(input_frame_gui, text="Activation Function: ", font=("Arial Bold", 14))
-        activation_function_combobox = ttk.Combobox(master=input_frame_gui, width=12, state="readonly")
-        activation_function_combobox['values'] = ("Sigmoid", "tanh", "ReLU", "Linear")
-        activation_function_combobox.current(0)
+        hidden_layer_activation_function_label = Label(input_frame_gui, text="Hidden Layer Activation Function: ", font=("Arial Bold", 14))
+        hidden_layer_activation_function_combobox = ttk.Combobox(master=input_frame_gui, width=12, state="readonly")
+        hidden_layer_activation_function_combobox['values'] = ("Sigmoid", "tanh", "ReLU", "Linear")
+        hidden_layer_activation_function_combobox.current(0)
 
-        activation_function_label.grid(column=3, row=5, sticky=E)
-        activation_function_combobox.grid(column=4, row=5, sticky=E)
-        self.activation_function_combobox = activation_function_combobox
+        hidden_layer_activation_function_label.grid(column=3, row=5, sticky=E)
+        hidden_layer_activation_function_combobox.grid(column=4, row=5, sticky=E)
+        self.hidden_layer_activation_function_combobox = hidden_layer_activation_function_combobox
+
+        output_layer_activation_function_label = Label(input_frame_gui, text="Output Layer Activation Function: ", font=("Arial Bold", 14))
+        output_layer_activation_function_combobox = ttk.Combobox(master=input_frame_gui, width=12, state="readonly")
+        output_layer_activation_function_combobox['values'] = ("Sigmoid", "tanh", "ReLU", "Linear")
+        output_layer_activation_function_combobox.current(0)
+
+        output_layer_activation_function_label.grid(column=3, row=6, sticky=E)
+        output_layer_activation_function_combobox.grid(column=4, row=6, sticky=E)
+        self.output_layer_activation_function_combobox = output_layer_activation_function_combobox
 
         bias_presence_label = Label(input_frame_gui, text="Bias Presence: ", font=("Arial Bold", 14))
         bias_presence_combobox = ttk.Combobox(master=input_frame_gui, width=12, state="readonly")
         bias_presence_combobox['values'] = ("Yes", "No")
         bias_presence_combobox.current(0)
 
-        bias_presence_label.grid(column=3, row=6, sticky=E)
-        bias_presence_combobox.grid(column=4, row=6, sticky=E)
+        bias_presence_label.grid(column=3, row=7, sticky=E)
+        bias_presence_combobox.grid(column=4, row=7, sticky=E)
         self.bias_presence_combobox = bias_presence_combobox
 
         batch_size_label = Label(input_frame_gui, text="Batch Size: ", font=("Arial Bold", 14))
         batch_size_entry_box = ttk.Entry(input_frame_gui, width=14)
 
-        batch_size_label.grid(column=3, row=7, sticky=E)
-        batch_size_entry_box.grid(column=4, row=7, sticky=E)
+        batch_size_label.grid(column=3, row=8, sticky=E)
+        batch_size_entry_box.grid(column=4, row=8, sticky=E)
         self.batch_size_entry_box = batch_size_entry_box
 
         number_of_epochs_label = Label(input_frame_gui, text="Number of Epochs: ", font=("Arial Bold", 14))
         number_of_epochs_entry_box = ttk.Entry(input_frame_gui, width=14)
 
-        number_of_epochs_label.grid(column=3, row=8, sticky=E)
-        number_of_epochs_entry_box.grid(column=4, row=8, sticky=E)
+        number_of_epochs_label.grid(column=3, row=9, sticky=E)
+        number_of_epochs_entry_box.grid(column=4, row=9, sticky=E)
         self.number_of_epochs_entry_box = number_of_epochs_entry_box
 
         learning_rate_label = Label(input_frame_gui, text="Learning Rate: ", font=("Arial Bold", 14))
         learning_rate_entry_box = ttk.Entry(input_frame_gui, width=14)
 
-        learning_rate_label.grid(column=3, row=9, sticky=E)
-        learning_rate_entry_box.grid(column=4, row=9, sticky=E)
+        learning_rate_label.grid(column=3, row=10, sticky=E)
+        learning_rate_entry_box.grid(column=4, row=10, sticky=E)
         self.learning_rate_entry_box = learning_rate_entry_box
 
         momentum_label = Label(input_frame_gui, text="Momentum: ", font=("Arial Bold", 14))
         momentum_entry_box = ttk.Entry(input_frame_gui, width=14)
 
-        momentum_label.grid(column=3, row=10, sticky=E)
-        momentum_entry_box.grid(column=4, row=10, sticky=E)
+        momentum_label.grid(column=3, row=11, sticky=E)
+        momentum_entry_box.grid(column=4, row=11, sticky=E)
         self.momentum_entry_box = momentum_entry_box
 
         problem_type_label = Label(input_frame_gui, text="Problem Type: ", font=("Arial Bold", 14))
@@ -228,8 +238,8 @@ class MLPGuiTrain:
         problem_type_combobox['values'] = ("Classification", "Regression")
         problem_type_combobox.current(0)
 
-        problem_type_label.grid(column=3, row=11, sticky=E)
-        problem_type_combobox.grid(column=4, row=11, sticky=E)
+        problem_type_label.grid(column=3, row=12, sticky=E)
+        problem_type_combobox.grid(column=4, row=12, sticky=E)
         self.problem_type_combobox = problem_type_combobox
 
         run_button = ttk.Button(master=main_frame, text="TRAIN", command=self.run)
@@ -264,7 +274,8 @@ class MLPGuiTrain:
         elif (momentum := Utils.cast_float(self.momentum_entry_box.get())) is None:
             msg.showerror(title="ERROR", message="MOMENTUM SIZE MUST BE A NUMERIC VALUE!")
         else:
-            activation_function = ActivationFunction.determine_function(self.activation_function_combobox.get())
+            hidden_layer_activation_function = ActivationFunction.determine_function(self.hidden_layer_activation_function_combobox.get())
+            output_layer_activation_function = ActivationFunction.determine_function(self.output_layer_activation_function_combobox.get())
             bias_presence = self.bias_presence_combobox.get()
             problem_type = self.problem_type_combobox.get()
             train_file_path = self.train_file.get_file_path()
@@ -273,7 +284,8 @@ class MLPGuiTrain:
             else:
                 solution_model = MLPRegression
 
-            mlp_model = solution_model(hidden_layer_count, hidden_layer_size, activation_function, train_file_path,
+            mlp_model = solution_model(hidden_layer_count, hidden_layer_size, hidden_layer_activation_function,
+                                       output_layer_activation_function, train_file_path,
                                        epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                                        bias_presence=bias_presence, momentum=momentum)
             mlp_model.train()
