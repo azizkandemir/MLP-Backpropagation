@@ -18,7 +18,7 @@ class MLPGuiTest:
         self.mlp = trained_mlp
         self.test_file = None
         self.output_path = ''
-        self.input_frame_entry_box = None  # Input File Path
+        self.input_frame_entry_box = None
         self.run_button = None
         self.browse_input_button = None
         self.test_fig = None
@@ -105,6 +105,12 @@ class MLPGuiTest:
 
     def run(self):
         def __plot_decision_boundary(pred_func):
+            """
+            Reference: https://stackoverflow.com/questions/34829807/understand-how-this-lambda-function-works
+            This function is being used to draw the decision boundaries.
+            :param pred_func:
+            :return:
+            """
             x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
             y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
             h = 0.01
@@ -373,7 +379,6 @@ class MLPGuiTrain:
             self.trained_model = mlp_model
             if mlp_model:
                 MLPGuiTest(mlp_model, problem_type)
-            # self.terminate()
 
     def terminate(self):
         self.window.destroy()
@@ -394,6 +399,3 @@ class InputFile:
 
 if __name__ == "__main__":
     train_mlp = MLPGuiTrain()
-    # if train_mlp.trained_model:
-    #     test_mlp = MLPGuiTest(train_mlp.trained_model)
-    # test_mlp = MLPGuiTest(None)

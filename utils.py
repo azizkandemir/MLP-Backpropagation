@@ -1,8 +1,3 @@
-from math import exp
-
-import numpy as np
-
-
 class Utils:
     @staticmethod
     def cast_int(s):

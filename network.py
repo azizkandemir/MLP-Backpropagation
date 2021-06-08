@@ -48,7 +48,7 @@ class Network:
     def get_layers(self):
         return self.layers
 
-    def forward_propagate(self, inputs):
+    def feed_forward(self, inputs):
         for layer in self.get_layers():
             new_inputs = []
             for neuron in layer.get_neurons():
@@ -60,21 +60,14 @@ class Network:
         return inputs
 
     def backward_propagate(self, expected):
-        """
-        Backpropagate error and store in neurons
-        :param expected:
-        :return:
-        """
-        # From output layer to input layer
-        # expected = [1,0]
+        # Start from output layer back to input layer
         for layer in reversed(self.get_layers()):
             errors = []
 
-            # For last layer just calculate errors
+            # For output layer just calculate errors
             if layer.is_output_layer:
                 for neuron_index, neuron in enumerate(layer.get_neurons()):
                     errors.append(neuron.get_output() - expected[neuron_index])
-            # For input and hidden layers
             else:
                 for neuron_index in range(len(layer.get_neurons())):
                     error = 0.0

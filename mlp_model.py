@@ -109,7 +109,7 @@ class MLPClassification(MLP):
                 for input_index, input_list in enumerate(batch_dataset):
                     expected_encoded_class = input_list[-1]
                     input_list = input_list[:-1]
-                    outputs = self.network.forward_propagate(input_list)
+                    outputs = self.network.feed_forward(input_list)
 
                     expected = [0 for _ in range(self.output_size)]  # [0, 0]
                     expected[expected_encoded_class] = 1
@@ -147,13 +147,13 @@ class MLPClassification(MLP):
     def predict_last(self, array):
         return_z = []
         for row in array:
-            outputs = self.network.forward_propagate(row)
+            outputs = self.network.feed_forward(row)
             return_z.append(outputs.index(max(outputs)))
         return return_z
 
     @staticmethod
     def predict(network, row):
-        outputs = network.forward_propagate(row)
+        outputs = network.feed_forward(row)
         return outputs.index(max(outputs))
 
     @staticmethod
@@ -233,7 +233,7 @@ class MLPRegression(MLP):
                 for input_index, input_list in enumerate(batch_dataset):
                     expected = input_list[-1]
                     input_list = input_list[:-1]
-                    outputs = self.network.forward_propagate(input_list)
+                    outputs = self.network.feed_forward(input_list)
                     total_error += (expected - outputs[0]) ** 2
 
                     self.network.backward_propagate([expected])
@@ -265,7 +265,7 @@ class MLPRegression(MLP):
 
     @staticmethod
     def predict(network, row):
-        outputs = network.forward_propagate(row)
+        outputs = network.feed_forward(row)
 
         return outputs[0]
 
