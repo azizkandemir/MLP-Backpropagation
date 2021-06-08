@@ -23,6 +23,7 @@ class MLPGuiTest:
         self.browse_input_button = None
         self.test_fig = None
         self.fig_result_text = None
+        self.plot_flag = None
         self.problem_type = problem_type
         self.create_widgets()
 
@@ -55,6 +56,9 @@ class MLPGuiTest:
         plt.interactive(False)
         self.test_fig = plt.figure(figsize=(7, 5))
         ax1 = self.test_fig.add_subplot()
+        if self.problem_type.lower() == 'regression':
+            ax1.set_ylabel('Y')
+            ax1.set_xlabel('X')
         axes = plt.gca()
         canvas = FigureCanvasTkAgg(self.test_fig, master=main_frame)
         plot_widget = canvas.get_tk_widget()
@@ -122,11 +126,17 @@ class MLPGuiTest:
         if self.problem_type.lower() == 'classification':
             text = f"Accuracy = {'{:.4f}'.format(test_result)}%"
             self.fig_result_text = plt.figtext(.05, .0, text, fontsize=10, va="bottom", ha="left")
+            __plot_decision_boundary(lambda x: mlp_model.predict_last(x))
         else:
-            self.test_fig.axes[0].set_ylim(bottom=0, auto=True)
-            text = f"Min MSE = {'{:.6f}'.format(test_result)}"
+            text = f"MSE = {'{:.6f}'.format(test_result)}"
             self.fig_result_text = plt.figtext(.05, .0, text, fontsize=10, va="bottom", ha="left")
-        __plot_decision_boundary(lambda x: mlp_model.predict_last(x))
+
+            m, b = np.polyfit(X, y, 1)
+            plt.scatter(X, y, s=0.1, color="blue", label="Dataset")
+            plt.plot(X, m*X + b, color="red", label="Regression Line")
+            if not self.plot_flag:
+                plt.legend(loc="upper left")
+            self.plot_flag = True
 
         self.test_fig.canvas.draw()
 

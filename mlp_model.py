@@ -121,8 +121,6 @@ class MLPClassification(MLP):
 
             print(f"MSE: {total_error/self.train_dataset_size}, Epoch: {epoch_num}")
 
-            training_metric = self.evaluate(self.network, self.train_dataset, encoded_classes)['accuracy']
-            training_score.append((epoch_num, training_metric))
             validation_metric = self.evaluate(self.network, self.validation_dataset, encoded_classes)['accuracy']
             validation_score.append((epoch_num, validation_metric))
             diff = validation_metric - prev_validation_metric
@@ -209,6 +207,13 @@ class MLPRegression(MLP):
             test_dataset_list = [row for row in csv.reader(csv_file)][1:]
         self.input_size = len(test_dataset_list[0]) - 1  # Subtract precision field, -1.
         test_dataset_list = [[*[Utils.cast_float(i) for i in row[:-1]], Utils.cast_float(row[-1])] for row in test_dataset_list]
+        self.X = []
+        self.y = []
+        for i in test_dataset_list:
+            self.y.append(i[-1])
+            self.X.append(i[0])
+        self.X = np.array(self.X)
+        self.y = np.array(self.y)
         self.test_dataset = test_dataset_list
 
     def train(self):
@@ -235,8 +240,6 @@ class MLPRegression(MLP):
                 else:
                     self.network.update_weights(input_list, self.learning_rate)
 
-            print(f"Training MSE: {total_error/self.train_dataset_size}, Epoch: {epoch_num}")
-
             validation_metric = self.evaluate(self.network, self.validation_dataset)['MSE']
             validation_score.append((epoch_num, validation_metric))
             diff = validation_metric - prev_validation_metric
@@ -258,11 +261,7 @@ class MLPRegression(MLP):
         self._read_test_dataset(test_dataset_path)
         test_metric = self.evaluate(self.network, self.test_dataset)['MSE']
         print(f"Test Result: {test_metric}")
-
-        for row in self.test_dataset:
-            expected = row[-1]
-            prediction = self.predict(self.network, row[:-1])
-            print(f'Expected: {expected}, Predicted: {prediction}, Error: {(expected - prediction) ** 2}')
+        return test_metric
 
     @staticmethod
     def predict(network, row):
