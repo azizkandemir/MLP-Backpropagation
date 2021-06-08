@@ -115,7 +115,6 @@ class MLPGuiTest:
         test_result = mlp_model.test(self.test_file.get_file_path())
         X = mlp_model.X
         y = mlp_model.y
-        __plot_decision_boundary(lambda x: mlp_model.predict_last(x))
         for i in self.test_fig.axes[0].get_lines():
             i.remove()
         for text in self.test_fig.texts:
@@ -127,6 +126,8 @@ class MLPGuiTest:
             self.test_fig.axes[0].set_ylim(bottom=0, auto=True)
             text = f"Min MSE = {'{:.6f}'.format(test_result)}"
             self.fig_result_text = plt.figtext(.05, .0, text, fontsize=10, va="bottom", ha="left")
+        __plot_decision_boundary(lambda x: mlp_model.predict_last(x))
+
         self.test_fig.canvas.draw()
 
     def terminate(self):
