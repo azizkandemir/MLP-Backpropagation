@@ -53,7 +53,7 @@ class MLPGuiTest:
 
         # Error graph
         plt.interactive(False)
-        self.test_fig = plt.figure(figsize=(5, 4))
+        self.test_fig = plt.figure(figsize=(7, 5))
         ax1 = self.test_fig.add_subplot()
         axes = plt.gca()
         canvas = FigureCanvasTkAgg(self.test_fig, master=main_frame)
@@ -194,7 +194,7 @@ class MLPGuiTrain:
         input_frame.grid(column=1, row=1, sticky=W, padx=20, pady=20, ipady=14)
 
         # Error graph
-        self.train_fig = plt.figure(figsize=(7, 6))
+        self.train_fig = plt.figure(figsize=(7, 5))
         plt.ion()
         ax1 = self.train_fig.add_subplot()
         ax1.set_ylabel('Accuracy [%]')
@@ -222,7 +222,7 @@ class MLPGuiTrain:
 
         # Input Frame GUI
         input_frame_gui = ttk.LabelFrame(main_frame, text='Input Parameters', padding="30 10 30 10", style="TLabelframe")
-        input_frame_gui.grid(column=1, row=2, sticky=N, padx=20, pady=20)
+        input_frame_gui.grid(column=1, row=2, sticky=W, padx=20, pady=20)
 
         hidden_layer_num_label = Label(input_frame_gui, text="Number of Hidden Layers: ", font=("Arial Bold", 14))
         hidden_layer_num_entry_box = ttk.Entry(input_frame_gui, width=14)
@@ -294,7 +294,7 @@ class MLPGuiTrain:
         self.problem_type_combobox = problem_type_combobox
 
         run_button = ttk.Button(master=main_frame, text="TRAIN", command=self.run)
-        run_button.grid(column=1, row=9, sticky=N, pady=10, ipadx=5)
+        run_button.grid(column=1, row=2, sticky=E, padx=20, ipadx=5)
         run_button['state'] = DISABLED
         self.run_button = run_button
 
@@ -367,6 +367,7 @@ class MLPGuiTrain:
 
     def terminate(self):
         self.window.destroy()
+        plt.close()
 
     def on_closing(self):
         if msg.askokcancel("Quit", "Do you want to quit?"):
