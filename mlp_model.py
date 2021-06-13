@@ -31,6 +31,7 @@ class MLP:
         self.bias_presence = True if bias_presence and bias_presence.lower() == 'yes' else False
         self.input_size = None
         self.network = None
+        self.is_mnist_dataset = False
         self.epsilon = epsilon
         self.early_stop_max_count = 100
         self.momentum = momentum
@@ -54,14 +55,19 @@ class MLPClassification(MLP):
 
     def _read_train_dataset(self):
         with open(self.train_dataset_path, 'r') as csv_file:
-            train_dataset_list = [row for row in csv.reader(csv_file)][1:]
+            csv_content = [row for row in csv.reader(csv_file)]
+            csv_header = csv_content[0]
+            if 'pixel' in csv_header[1].lower():
+                self.is_mnist_dataset = True
+            train_dataset_list = csv_content[1:]
         self.input_size = len(train_dataset_list[0]) - 1    # Subtract precision field, -1.
-        output_classes = sorted(set([row[-1] for row in train_dataset_list]))
+        output_classes = sorted(set([row[0] if self.is_mnist_dataset else row[-1] for row in train_dataset_list]))
         for index, output_class in enumerate(output_classes):
             self.encoded_classes_key_real[Utils.cast_int(output_class)] = index
             self.encoded_classes_key_index[index] = Utils.cast_int(output_class)
         self.output_size = len(output_classes)
-        train_dataset_list = [[*[Utils.cast_float(i) for i in row[:-1]], self.encoded_classes_key_real[Utils.cast_int(row[-1])]] for row in train_dataset_list]
+        division_to_normalize = 255 if self.is_mnist_dataset else 1
+        train_dataset_list = [[*[Utils.cast_float(i)/division_to_normalize for i in (row[1:] if self.is_mnist_dataset else row[:-1])], self.encoded_classes_key_real[Utils.cast_int(row[0] if self.is_mnist_dataset else row[-1])]] for row in train_dataset_list]
         # Train/validation split
         self.train_dataset, self.validation_dataset = PreProcess.train_test_split(train_dataset_list)
         self.train_dataset_size = len(self.train_dataset)
@@ -91,6 +97,13 @@ class MLPClassification(MLP):
         self.y = np.array(self.y)
         self.test_dataset = test_dataset_list
         return {'real_to_index': encoded_classes_key_real, 'index_to_real': encoded_classes_key_index}
+
+    def _read_mnist_test_dataset(self, test_dataset_path):
+        with open(test_dataset_path, 'r') as csv_file:
+            test_dataset_list = [row for row in csv.reader(csv_file)][1:]
+        test_dataset_list = [[*[Utils.cast_float(i)/255 for i in row]] for row in test_dataset_list]
+        self.test_dataset = test_dataset_list
+        return {'real_to_index': {i: i for i in range(10)}, 'index_to_real': {i: i for i in range(10)}}
 
     def train(self):
         training_score, validation_score = [], []
@@ -139,10 +152,21 @@ class MLPClassification(MLP):
         return validation_score
 
     def test(self, test_dataset_path):
-        encoded_classes_dict = self._read_test_dataset(test_dataset_path)
-        test_metric = self.evaluate(self.network, self.test_dataset, encoded_classes_dict)['accuracy']
-        print(f"Test Result: {test_metric}")
-        return test_metric
+        if self.is_mnist_dataset:
+            encoded_classes_dict = self._read_mnist_test_dataset(test_dataset_path)
+            predictions = self.evaluate_mnist(self.network, self.test_dataset, encoded_classes_dict)
+            with open("./datasets/MNIST/submission.csv", "w") as f:
+                f.write("ImageId,Label\n")
+                f.writelines([f"{i+1},{int(prediction)}\n" for i, prediction in enumerate(predictions)])
+        else:
+            encoded_classes_dict = self._read_test_dataset(test_dataset_path)
+            test_metric = self.evaluate(self.network, self.test_dataset, encoded_classes_dict)['accuracy']
+            print(f"Test Result: {test_metric}")
+            return test_metric
+
+    def predict_image(self, image_pixel_list):
+        result = self.predict(self.network, image_pixel_list)
+        return result
 
     def predict_last(self, array):
         return_z = []
@@ -170,6 +194,17 @@ class MLPClassification(MLP):
         return {
             'accuracy': MLPClassification.accuracy_metric(actual, predictions)
         }
+
+    @staticmethod
+    def evaluate_mnist(network, test_set, encoded_classes):
+        predictions = list()
+        for row in test_set:
+            prediction = MLPClassification.predict(network, row)
+            if encoded_classes and (decoded_class := encoded_classes['index_to_real'].get(prediction)):
+                prediction = decoded_class
+            predictions.append(prediction)
+
+        return predictions
 
     @staticmethod
     def accuracy_metric(actual, predicted):

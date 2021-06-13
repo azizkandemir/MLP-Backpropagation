@@ -2,7 +2,6 @@ from tkinter import ttk, filedialog, Tk, N, W, E, S, RIDGE, Label, DISABLED, ACT
 from tkinter import messagebox as msg
 
 import numpy as np
-
 from functions import ActivationFunction
 from mlp_model import MLPClassification, MLPRegression
 from utils import Utils
@@ -19,8 +18,11 @@ class MLPGuiTest:
         self.test_file = None
         self.output_path = ''
         self.input_frame_entry_box = None
+        self.test_image_frame_entry_box = None
+        self.test_image_frame_label = None
         self.run_button = None
         self.browse_input_button = None
+        self.predict_image_button = None
         self.test_fig = None
         self.fig_result_text = None
         self.plot_flag = None
@@ -70,25 +72,49 @@ class MLPGuiTest:
         intro_label.grid(column=1, row=0, sticky=N)
 
         # Input Frame
-        input_frame = ttk.LabelFrame(main_frame, text='Load Test Dataset', padding="30 10 30 10", style="TLabelframe")
-        input_frame.grid(column=1, row=1, sticky=W, padx=20, pady=20, ipady=14)
+        input_frame = ttk.LabelFrame(main_frame, text='Load Test Dataset', padding="30 0 30 0", style="TLabelframe")
+        input_frame.grid(column=1, row=0, sticky=W, padx=20, pady=80)
 
         # Input Frame Label
         input_frame_label = Label(input_frame, text="Dataset File Path: ", font=("Arial Bold", 14))
         input_frame_entry_box = ttk.Entry(input_frame, width=40)
 
-        input_frame_label.grid(column=1, row=2, sticky=W)
-        input_frame_entry_box.grid(column=2, row=3, sticky=W)
+        input_frame_label.grid(column=1, row=1, sticky=W)
+        input_frame_entry_box.grid(column=2, row=1, sticky=W)
         self.input_frame_entry_box = input_frame_entry_box
 
         browse_input_button = ttk.Button(master=input_frame, text="BROWSE", command=self.browse_input)
-        browse_input_button.grid(column=2, row=4, sticky=E, pady=10, ipadx=2)
+        browse_input_button.grid(column=2, row=2, sticky=E, pady=10, ipadx=2)
         self.browse_input_button = browse_input_button
 
-        run_button = ttk.Button(master=main_frame, text="TEST", command=self.run)
-        run_button.grid(column=1, row=2, sticky=N, pady=10, ipadx=5)
+        run_button = ttk.Button(master=input_frame, text="TEST", command=self.run)
+        run_button.grid(column=2, row=2, sticky=N, pady=10, ipadx=5)
         run_button['state'] = DISABLED
         self.run_button = run_button
+
+        if self.mlp.is_mnist_dataset:
+
+            # Test Label
+            test_label = Label(main_frame, text="Predict the image from the test dataset by image index.", font=("Arial", 12))
+            test_label.grid(column=1, row=2, sticky=N)
+
+            # Test Image Frame
+            test_image_frame = ttk.LabelFrame(main_frame, text="Test Image with Index", padding="30 10 30 10", style="TLabelframe")
+            test_image_frame.grid(column=1, row=2, sticky=W, padx=20, pady=30, ipady=14)
+
+            # Test Image Label
+            test_image_frame_label = Label(test_image_frame, text="Select Image Index [0-?]: ", font=("Arial Bold", 14))
+            self.test_image_frame_label = test_image_frame_label
+            test_image_frame_entry_box = ttk.Entry(test_image_frame, width=40)
+
+            test_image_frame_label.grid(column=1, row=3, sticky=W)
+            test_image_frame_entry_box.grid(column=2, row=3, sticky=W)
+            self.test_image_frame_entry_box = test_image_frame_entry_box
+
+            predict_image_button = ttk.Button(master=test_image_frame, text="PREDICT", command=self.predict_image)
+            predict_image_button.grid(column=2, row=4, sticky=E, pady=10, ipadx=2)
+            self.predict_image_button = predict_image_button
+            predict_image_button['state'] = DISABLED
 
         window.protocol("WM_DELETE_WINDOW", self.on_closing)
         window.mainloop()
@@ -123,28 +149,50 @@ class MLPGuiTest:
 
         mlp_model = self.mlp
         test_result = mlp_model.test(self.test_file.get_file_path())
-        X = mlp_model.X
-        y = mlp_model.y
-        for i in self.test_fig.axes[0].get_lines():
-            i.remove()
-        for text in self.test_fig.texts:
-            text.set_visible(False)
-        if self.problem_type.lower() == 'classification':
-            text = f"Accuracy = {'{:.4f}'.format(test_result)}%"
-            self.fig_result_text = plt.figtext(.05, .0, text, fontsize=10, va="bottom", ha="left")
-            __plot_decision_boundary(lambda x: mlp_model.predict_last(x))
+        if self.mlp.is_mnist_dataset:
+            total_samples = len(self.mlp.test_dataset)
+            self.test_image_frame_label['text'] = f"Select Image Index [0-{total_samples-1}]: "
+            self.predict_image_button['state'] = ACTIVE
+            msg.showinfo(title="INFO", message="Test results have been saved to submission.csv under dataset folder.")
         else:
-            text = f"MSE = {'{:.6f}'.format(test_result)}"
+            X = mlp_model.X
+            y = mlp_model.y
+            for i in self.test_fig.axes[0].get_lines():
+                i.remove()
+            for text in self.test_fig.texts:
+                text.set_visible(False)
+            if self.problem_type.lower() == 'classification':
+                text = f"Accuracy = {'{:.4f}'.format(test_result)}%"
+                self.fig_result_text = plt.figtext(.05, .0, text, fontsize=10, va="bottom", ha="left")
+                __plot_decision_boundary(lambda x: mlp_model.predict_last(x))
+            else:
+                text = f"MSE = {'{:.6f}'.format(test_result)}"
+                self.fig_result_text = plt.figtext(.05, .0, text, fontsize=10, va="bottom", ha="left")
+
+                m, b = np.polyfit(X, y, 1)
+                plt.scatter(X, y, s=0.1, color="blue", label="Dataset")
+                plt.plot(X, m*X + b, color="red", label="Regression Line")
+                if not self.plot_flag:
+                    plt.legend(loc="upper left")
+                self.plot_flag = True
+
+            self.test_fig.canvas.draw()
+
+    def predict_image(self):
+        if (image_index := Utils.cast_int(self.test_image_frame_entry_box.get())) is None:
+            msg.showerror(title="ERROR", message="IMAGE INDEX MUST BE AN INTEGER!")
+        else:
+            image_sample = self.mlp.test_dataset[image_index]
+            image = np.array(image_sample).reshape((28, 28))
+            plt.gray()
+            plt.plot()
+            plt.imshow(image, interpolation='nearest')
+            self.test_fig.canvas.draw()
+            result = self.mlp.predict_image(image_sample)
+            text = f"Predicted Digit: {result}"
+            if self.fig_result_text:
+                self.fig_result_text.set_visible(False)
             self.fig_result_text = plt.figtext(.05, .0, text, fontsize=10, va="bottom", ha="left")
-
-            m, b = np.polyfit(X, y, 1)
-            plt.scatter(X, y, s=0.1, color="blue", label="Dataset")
-            plt.plot(X, m*X + b, color="red", label="Regression Line")
-            if not self.plot_flag:
-                plt.legend(loc="upper left")
-            self.plot_flag = True
-
-        self.test_fig.canvas.draw()
 
     def terminate(self):
         self.window.destroy()
@@ -219,7 +267,7 @@ class MLPGuiTrain:
         self.fig_result_text = plt.figtext(.05, .0, "Final Accuracy =  \n Max Accuracy = ", fontsize=10, va="bottom", ha="left")
 
         axes = plt.gca()
-        axes.set_ylim([0, 100])
+        axes.set_ylim([0, 105])
         canvas = FigureCanvasTkAgg(self.train_fig, master=main_frame)
         plot_widget = canvas.get_tk_widget()
         plot_widget.grid(column=2, row=0, sticky=N, rowspan=3)
@@ -364,7 +412,7 @@ class MLPGuiTrain:
             for text in self.train_fig.texts:
                 text.set_visible(False)
             if problem_type.lower() == 'classification':
-                self.train_fig.axes[0].set_ylim([0, 100])
+                self.train_fig.axes[0].set_ylim([0, 105])
                 text = f"Final Accuracy = {'{:.4f}'.format(metric[-1])}% \n " \
                        f"Max Accuracy = {'{:.4f}'.format(max(metric))}%"
                 self.fig_result_text = plt.figtext(.05, .0, text, fontsize=10, va="bottom", ha="left")

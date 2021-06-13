@@ -29,7 +29,7 @@ class Network:
         output_size = self.output_size
         hidden_layer_activation_func = self.hidden_layer_activation_function
         output_layer_activation_func = self.output_layer_activation_function
-        random.seed(10)
+        random.seed(42)
         for layer_index in range(hidden_layer_count):
             previous_layer_size = input_size if layer_index == 0 else hidden_layer_size
             neuron_list = [Neuron(previous_layer_size + (1 if bias_presence else 0), hidden_layer_activation_func) for _ in range(hidden_layer_size)]
@@ -57,6 +57,8 @@ class Network:
             inputs = new_inputs
         if isinstance(self.output_layer_activation_function, SoftmaxFunction):
             inputs = list(SoftmaxFunction.activate_all(inputs))
+            for i, neuron in enumerate(self.output_layer.get_neurons()):
+                neuron.output = inputs[i]
         return inputs
 
     def backward_propagate(self, expected):

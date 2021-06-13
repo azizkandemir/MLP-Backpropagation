@@ -3,7 +3,7 @@ import random
 
 class Neuron:
     def __init__(self, input_weight_count, activation_function):
-        self.input_weights = [random.random() for _ in range(input_weight_count)]
+        self.input_weights = [random.random() - 0.5 for _ in range(input_weight_count)]
         self.output = None
         self.activation_function = activation_function
         self.delta = 0
